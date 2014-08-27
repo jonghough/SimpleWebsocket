@@ -2,7 +2,7 @@ from Tkinter import *
 import threading
 import logging
 logging.basicConfig()
-import realjsocket
+import websocket
 import time
 
 ''' Very basic Websocket client with Tkinter UI.
@@ -89,7 +89,7 @@ class WebsocketClientApp():
 			
 	def start_connection(self):	
 		'''Opens connection'''
-		self.client = realjsocket.WebsocketController(None, None, None)
+		self.client = websocket.WebsocketController(None, None, None)
 		self.client.begin_connection()
 		
 

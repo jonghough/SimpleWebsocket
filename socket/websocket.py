@@ -22,10 +22,6 @@ author: Jonathan Hough
 class WebsocketClient ( object ):
 	''' Websocket client class. '''
 
-
-	#Globally unique identifier
-	GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-
 	#Closing frame status code 
 	#see RFC 6455 Section 4.1 (Status codes)
 	NORMAL_CLOSURE 		= 1000
@@ -93,30 +89,25 @@ class WebsocketClient ( object ):
 		frame = chr(1 <<7 |opcode)
 		#mask bit, payload data length, mask key, paylod data (second + BYTES) 
 		mask_bit = 1 << 7
-		datalen = len(data)
-		print "Datalength is "+str(datalen)		
+		datalen = len(data)		
 		if datalen < WebsocketClient.MAX_DATA_NO_EXTENSION:
 			frame += chr( mask_bit | datalen )
-			print 'frame A'
 		elif datalen < WebsocketClient.DATA_2_BYTE_EXTENSION:
 			frame += struct.pack('!B', mask_bit | 0x7e) +struct.pack("!H", datalen)
-			print 'frame B'
 		else:
 			frame += struct.pack('!B', mask_bit | 0x7f) + struct.pack("!Q", datalen) 
-			print 'frame C'
 
 		print str(frame)
 
 		key = os.urandom(4)
 		frame = frame + key + WebsocketClient.mask(key, data)
 		return frame
-
-
-	#def process_frame(self, frame):
 		
 
 	@staticmethod
 	def mask(key, data):
+		''' Masks the data with the given key using the 
+		    masking method defined in RFC 6455 Section 5.3 '''
 		masked = []
 		keybytes = array("B", key)
 		databytes = array("B", data) 
@@ -126,11 +117,7 @@ class WebsocketClient ( object ):
 
 
 
-#
-#
-# -------------------------------------------------------
-#
-#
+
 
 #Globally unique identifier, see RFC6454
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -153,8 +140,8 @@ def create_header(key):
 	return header
 
 
-def create_nonce():
-	'''16 bytes'''
+def create_header_key():
+	'''16 bytes. 16 random bytes, base 64 encoded.'''
 	rand 	= os.urandom(16)
 	encoded = base64.b64encode(rand)
 	return encoded
@@ -228,7 +215,7 @@ class WebsocketController(object):
 	
 	def begin_connection(self):
 		''' Starts the websocket connection with initial handshake.'''
-		key 	= create_nonce()
+		key 	= create_header_key()
 		rep 	= False
 		
 		try:
@@ -261,15 +248,13 @@ class WebsocketController(object):
 					if self.handshake is True:
 						msg = self.process_frame(self.sock, buf)
 						
-						print "MESSAGE IS "+msg
-					#buf = buf.decode('unicode_escape')
+						print "Returned　message: "+msg
+						
 					#for handshake frame from server				
 					if self.handshake is False:
-					
-						print "BUFFER "+buf
 						headers = buf.split('\r\n')
 
-						kvp = {} #dictionary
+						kvp = {}
 						for h in headers:
 							split = h.split(':')
 							if len(split) == 1:
@@ -277,16 +262,17 @@ class WebsocketController(object):
 							for item in split :
 								item.strip()
 								item.lstrip()
-								#print item
-							#print split
 							kvp[split[0]] = split[1]
 					
-						geykey = kvp['Sec-WebSocket-Accept']
-						print "RETURNED KEY "+geykey
-						print kvp 
+						returnedkey = kvp['Sec-WebSocket-Accept']
+						print returnedkey 
 						expect = expected_value(key)
 						print expect
-						self.handshake = True # handshake complete
+						if returnedkey.strip() == expect.strip():
+							self.handshake = True # handshake complete
+						else:
+							pass 
+							#TODO throw error. Keys didn't match
 					if  False:
 						rep = True
 						self.send_message("this is the message. FIN")
