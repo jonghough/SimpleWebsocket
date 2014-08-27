@@ -146,7 +146,30 @@ def expected_value(val):
 	sha1 = base64.b64encode(hashlib.sha1(val+GUID).digest())
 	return sha1
 
-
+def keys_match(headers, key):
+	'''Checks whether the key returned by the websocket server in opening handshake is the
+	   same as the expected value.
+	   see RFC 6455 Section 4.2 
+	'''
+	kvp = {}
+	for h in headers:
+		split = h.split(':')
+		if len(split) == 1:
+			split.append(" ")
+		for item in split :
+			item.strip()
+			item.lstrip()
+		kvp[split[0]] = split[1]
+					
+	returnedkey = kvp['Sec-WebSocket-Accept']
+	print returnedkey 
+	expect = expected_value(key)
+	print expect
+	if returnedkey.strip() == expect.strip():
+		return True
+	else: return False
+							
+	
 
 class WebsocketController(object):
 	'''
@@ -247,21 +270,9 @@ class WebsocketController(object):
 					if self.handshake is False:
 						headers = buf.split('\r\n')
 
-						kvp = {}
-						for h in headers:
-							split = h.split(':')
-							if len(split) == 1:
-								split.append(" ")
-							for item in split :
-								item.strip()
-								item.lstrip()
-							kvp[split[0]] = split[1]
-					
-						returnedkey = kvp['Sec-WebSocket-Accept']
-						print returnedkey 
-						expect = expected_value(key)
-						print expect
-						if returnedkey.strip() == expect.strip():
+						
+						keymatch = keys_match(headers, key)
+						if keymatch is True:
 							self.handshake = True # handshake complete
 						else:
 							self.sock.close()
