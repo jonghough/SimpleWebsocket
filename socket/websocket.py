@@ -65,15 +65,6 @@ class WebsocketClient ( object ):
 	DATA_8_BYTE_EXTENSION = 1 << 63;
 
 
-
-	@staticmethod
-	def create_key():
-		'''16 bytes'''
-		rand 	= os.urandom(16)
-		encoded = base64.b64encode(rand)
-		return encoded
-
-
 	@staticmethod
 	def expected_value(val):
 		'''Returns expected base 64 encoded Sha1 hash value of val concatenated with GUID.
@@ -84,10 +75,12 @@ class WebsocketClient ( object ):
 	
 	@staticmethod
 	def make_frame(data, opcode):
-		'''Assumes reserved bits are 0'''
-		#final bit and opcode (first BYTE)
-		frame = chr(1 <<7 |opcode)
-		#mask bit, payload data length, mask key, paylod data (second + BYTES) 
+		'''Creates text frame to send to websocket server. 
+		   see RFC6455 Section 5.2.'''
+		#Assumes reserved bits are 0
+		#final bit and opcode (first byte)
+		frame = chr(1 << 7 | opcode)
+		#mask bit, payload data length, mask key, paylod data (second + bytes) 
 		mask_bit = 1 << 7
 		datalen = len(data)		
 		if datalen < WebsocketClient.MAX_DATA_NO_EXTENSION:
@@ -175,8 +168,8 @@ class WebsocketController(object):
 		self.closing 	= False 	#true if begin closing handshake
 		self.response_buffer = []
 		self.cont_frame = ""
-		self.fragment 	= False; 	#flag for fragmented message expectation.
-		
+		self.fragment 	= False 	#flag for fragmented message expectation.
+		self.is_closed 	= True		#true prior to connection and after connection closed by either endpoint.
 	
 	def process_frame(self, sock, buf):
 		''' Processes recieved frame. '''
@@ -192,6 +185,7 @@ class WebsocketController(object):
 			elif frameholder.opcode == 0x8 and self.closing is False: # closing frame. Remote endpoint closed connection.
 				cls = WebsocketClient.make_frame('1000', 0x8)
 				sock.sendall(cls)
+				self.is_closed = True
 				if self.on_close is not None:
 					self.on_close()
 			elif frameholder.opcode == 0xA: #ping frame, reply pong.
@@ -216,8 +210,7 @@ class WebsocketController(object):
 	def begin_connection(self):
 		''' Starts the websocket connection with initial handshake.'''
 		key 	= create_header_key()
-		rep 	= False
-		
+		self.is_closed = False;
 		try:
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		except socket.error, e:
@@ -240,7 +233,7 @@ class WebsocketController(object):
 		except socket.error, e:
 			print "Error "+str(e)
 
-		while 1:
+		while self.is_closed is False:
 
 			try:
 				buf = self.sock.recv(4096)
@@ -248,7 +241,7 @@ class WebsocketController(object):
 					if self.handshake is True:
 						msg = self.process_frame(self.sock, buf)
 						
-						print "Returned　message: "+msg
+						print "Returned message: "+msg
 						
 					#for handshake frame from server				
 					if self.handshake is False:
@@ -271,10 +264,14 @@ class WebsocketController(object):
 						if returnedkey.strip() == expect.strip():
 							self.handshake = True # handshake complete
 						else:
-							pass 
+							self.sock.close()
+							self.is_closing = True
+							self.is_closed = True
+							if self.on_close is not None:
+								self.on_close()
 							#TODO throw error. Keys didn't match
+							
 					if  False:
-						rep = True
 						self.send_message("this is the message. FIN")
 						#self.sock.sendall(WebsocketClient.make_frame('1000', 0x8))
 					
@@ -291,7 +288,7 @@ class WebsocketController(object):
 
 	def send_message(self, message):
 		'''Sends message string to remote endpoint'''
-		if self.closing is False:
+		if self.closing is False and self.is_closed is False:
 			self.sock.sendall(WebsocketClient.make_frame(unicode(message).encode("unicode_escape"), 0x1))
 			return True
 		else:
