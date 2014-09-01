@@ -115,22 +115,46 @@ class WebsocketClient ( object ):
 #Globally unique identifier, see RFC6454
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
-def create_header(key):
-	#-------------
-	# TODO need to add a URI parameter etc.
-	# for now, only connects to test echo server
-	#-------------
-	print key
+def create_header(socketkey, test = False, **kwargs):
+	'''
+	Creates the initial websocket creation header.
+	test parameter is used for testing, (with echo.websocket.org).
 	
-	header = "GET /echo HTTP/1.1\r\n"\
-		+"Upgrade: websocket\r\n"\
-		+"Connection: Upgrade\r\n"\
-		+"Host: echo.websocket.org\r\n"\
-		+"Origin: null\r\n"\
-		+"Sec-WebSocket-Key: "+key+"\r\n"\
-		+"Sec-WebSocket-Protocol: chat, superchat\r\n"\
-		+"Sec-WebSocket-Version: 13\r\n\r\n"
-	return header
+	'''
+	
+	if test is True:
+	
+		header = "GET /echo HTTP/1.1\r\n"\
+			+"Upgrade: websocket\r\n"\
+			+"Connection: Upgrade\r\n"\
+			+"Host: echo.websocket.org\r\n"\
+			+"Origin: null\r\n"\
+			+"Sec-WebSocket-Key: "+socketkey+"\r\n"\
+			+"Sec-WebSocket-Protocol: chat, superchat\r\n"\
+			+"Sec-WebSocket-Version: 13\r\n\r\n"
+		return header
+	else:
+		resource = ""
+		host = ""
+		origin = "null"
+		if kwargs is not None:
+			for key, value in kwargs.iteritems():
+				if key is "resource":
+					resource = value
+				elif key is "host":
+					host = value
+				elif key is origin:
+					origin = value
+				
+		header = "GET "+resource+" HTTP/1.1\r\n"\
+			+"Upgrade: websocket\r\n"\
+			+"Connection: Upgrade\r\n"\
+			+"Host: "+host+" \r\n"\
+			+"Origin: "+origin+" \r\n"\
+			+"Sec-WebSocket-Key: "+socketkey+"\r\n"\
+			+"Sec-WebSocket-Protocol: chat, superchat\r\n"\
+			+"Sec-WebSocket-Version: 13\r\n\r\n"
+		return header
 
 
 def create_header_key():
@@ -147,9 +171,10 @@ def expected_value(val):
 	return sha1
 
 def keys_match(headers, key):
-	'''Checks whether the key returned by the websocket server in opening handshake is the
-	   same as the expected value.
-	   see RFC 6455 Section 4.2 
+	'''
+	Checks whether the key returned by the websocket server in opening handshake is the
+	same as the expected value.
+	see RFC 6455 Section 4.2 
 	'''
 	kvp = {}
 	for h in headers:
@@ -173,8 +198,8 @@ def keys_match(headers, key):
 
 class WebsocketController(object):
 	'''
-		Controller for websocket functionality. Needs to be passed
-		on_error, on_close, on_message functions.
+	Controller for websocket functionality. Needs to be passed
+	on_error, on_close, on_message functions.
 	'''
 	def __init__(self, onerror, onclose, onmessage):
 		'''
@@ -252,7 +277,7 @@ class WebsocketController(object):
 
 
 		try:
-			self.sock.sendall(create_header(key))
+			self.sock.sendall(create_header(key,True))
 		except socket.error, e:
 			print "Error "+str(e)
 
@@ -282,9 +307,6 @@ class WebsocketController(object):
 								self.on_close()
 							#TODO throw error. Keys didn't match
 							
-					if  False:
-						self.send_message("this is the message. FIN")
-						#self.sock.sendall(WebsocketClient.make_frame('1000', 0x8))
 					
 					
 				
@@ -308,7 +330,8 @@ class WebsocketController(object):
 
 class FrameHolder(object):
 	''' Convenient holder class for received frames. 
-	    Validates and gets info from raw frame bytes'''
+	    Validates and gets info from raw frame bytes
+	'''
 	def __init__(self, rawframe):
 		self.valid_frame 	= True
 		self.finbit 		= None
