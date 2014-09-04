@@ -1,8 +1,10 @@
 SimpleWebsocket
 ===============
 
-An implementation of the Websocket protocol for clients in Python, made as simple as possible.
-Written for Python 2.7.
+A minimal Python Websocket protocol client.
+Uses Python 2.7
+
+The purpose is to create a minimal, easy to read, easy to use Python-based websocket client. 
 
 TODOs
 =====
