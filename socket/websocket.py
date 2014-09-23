@@ -276,7 +276,7 @@ class WebsocketController(object):
 			port = 80
 			if self.protocol is "wss":
 				port = 443
-			addr = ("echo.websocket.org",port)
+			addr = (self.uri, port)
 			print self.protocol
 			self.sock.connect(addr)
 		except socket.gaierror, e:
