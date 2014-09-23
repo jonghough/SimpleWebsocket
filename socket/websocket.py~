@@ -262,6 +262,7 @@ class WebsocketController(object):
 			prtl = uri.split('://')
 			self.protocol = prtl[0]
 			self.uri = ''.join(prtl[1:])
+		print self.uri
 		
 		key 	= create_header_key()
 		self.is_closed = False;

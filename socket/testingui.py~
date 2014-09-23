@@ -89,7 +89,7 @@ class WebsocketClientApp():
 			
 	def start_connection(self):	
 		'''Opens connection'''
-		self.client = websocket.WebsocketController(None, None, None)
+		self.client = websocket.WebsocketController(None, None, "wss://echo.websocket.org")
 		self.client.begin_connection("wss://echo.websocket.org")
 		
 
