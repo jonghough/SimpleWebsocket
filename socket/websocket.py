@@ -7,8 +7,6 @@ import hashlib
 import struct
 from array import array
 import sys
-#reload(sys)
-#sys.setdefaultencoding("utf-8")
 
 '''
 Simple python implementation of the Websocket protocol (RFC6455) for
@@ -19,8 +17,13 @@ conforming to the protocol.
 author: Jonathan Hough
 '''
 
+
+
 class WebsocketClient ( object ):
 	''' Websocket client class. '''
+	
+	#Globally unique identifier, see RFC6454
+	GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 	#Closing frame status code 
 	#see RFC 6455 Section 4.1 (Status codes)
@@ -69,14 +72,16 @@ class WebsocketClient ( object ):
 	def expected_value(val):
 		'''Returns expected base 64 encoded Sha1 hash value of val concatenated with GUID.
 		This should be the same as the header field Sec-Websocket-Accept, returned from server.'''
-		sha1 = base64.b64encode(hashlib.sha1(val + GUID).digest())
+		sha1 = base64.b64encode(hashlib.sha1(val + WebsocketClient.GUID).digest())
 		return sha1
 
 	
 	@staticmethod
 	def make_frame(data, opcode):
 		'''Creates text frame to send to websocket server. 
-		   see RFC6455 Section 5.2.'''
+		   see RFC6455 Section 5.2.
+			For Python struct.pack formats see: https://docs.python.org/2/library/struct.html#struct.pack
+		'''
 		#Assumes reserved bits are 0
 		#final bit and opcode (first byte)
 		frame = chr(1 << 7 | opcode)
@@ -110,10 +115,6 @@ class WebsocketClient ( object ):
 
 
 
-
-
-#Globally unique identifier, see RFC6454
-GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 def create_header(socketkey, test = False, **kwargs):
 	'''
@@ -157,6 +158,7 @@ def create_header(socketkey, test = False, **kwargs):
 		return header
 
 
+
 def create_header_key():
 	'''16 bytes. 16 random bytes, base 64 encoded.'''
 	rand 	= os.urandom(16)
@@ -167,7 +169,7 @@ def expected_value(val):
 	'''Returns expected base 64 encoded Sha1 hash value of val concatenated with GUID.
 	   This should be the same as the header field Sec-Websocket-Accept, 
 	   returned from server.'''
-	sha1 = base64.b64encode(hashlib.sha1(val+GUID).digest())
+	sha1 = base64.b64encode(hashlib.sha1(val+WebsocketClient.GUID).digest())
 	return sha1
 
 def keys_match(headers, key):
@@ -363,16 +365,21 @@ class FrameHolder(object):
 		
 		self.message = 0
 		# get the payload length
-		if length == 126: 			# extension
+		# extension
+		if length == 126: 			
 			self.message = frame[4:]
-		elif length == 127: 		# double extension
+		# 8 byte extension
+		elif length == 127: 		
 			self.message = frame[10:]
-		else:						# standard
+		# standard
+		else:					
 			self.message = frame[2:] 
 		#payload message.
 		self.message = self.message.tostring().decode('unicode_escape')
 		print "msg = "+self.message
 
+
+# below is retained for some tests.
 '''
 def main():
 	wc = WebsocketController(None, None, None)
