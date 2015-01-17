@@ -116,7 +116,7 @@ class WebsocketClient ( object ):
 
 
 
-def create_header(socketkey, test = False, **kwargs):
+def create_header(socketkey, test, hosturi, port, **kwargs):
 	'''
 	Creates the initial websocket creation header.
 	test parameter is used for testing, (with echo.websocket.org).
@@ -135,8 +135,7 @@ def create_header(socketkey, test = False, **kwargs):
 			+"Sec-WebSocket-Version: 13\r\n\r\n"
 		return header
 	else:
-		resource = ""
-		host = ""
+		resource = "/"
 		origin = "null"
 		if kwargs is not None:
 			for key, value in kwargs.iteritems():
@@ -150,10 +149,9 @@ def create_header(socketkey, test = False, **kwargs):
 		header = "GET "+resource+" HTTP/1.1\r\n"\
 			+"Upgrade: websocket\r\n"\
 			+"Connection: Upgrade\r\n"\
-			+"Host: "+host+" \r\n"\
+			+"Host: "+hosturi+str(port)+" \r\n"\
 			+"Origin: "+origin+" \r\n"\
 			+"Sec-WebSocket-Key: "+socketkey+"\r\n"\
-			+"Sec-WebSocket-Protocol: chat, superchat\r\n"\
 			+"Sec-WebSocket-Version: 13\r\n\r\n"
 		return header
 
@@ -222,6 +220,7 @@ class WebsocketController(object):
 		self.is_closed 	= True		#true prior to connection and after connection closed by either endpoint.
 		self.protocol 	= "ws"
 		self.uri 	= ""
+		self.port 	= "80"		#default value
 	def process_frame(self, sock, buf):
 		''' Processes recieved frame. '''
 		frameholder = FrameHolder(buf)
@@ -258,13 +257,17 @@ class WebsocketController(object):
 			return msg
 		else: return None
 	
-	def begin_connection(self, uri):
-		''' Starts the websocket connection with initial handshake.'''
+	def begin_connection(self, uri, port = None):
+		''' Starts the websocket connection with initial handshake.
+		If not port number is given the default value of 80 will
+    		be used.'''
 		if uri is not None:
 			prtl = uri.split('://')
 			self.protocol = prtl[0]
+			print "protocol is "+str(self.protocol)
 			self.uri = ''.join(prtl[1:])
-		
+		if port is not None:
+			self.port = port
 		key 	= create_header_key()
 		self.is_closed = False;
 		try:
@@ -275,10 +278,10 @@ class WebsocketController(object):
 		try:
 			host = socket.gethostbyname(self.uri)
 			print host
-			port = 80
-			if self.protocol is "wss":
-				port = 443
-			addr = (self.uri, port)
+			
+			if self.protocol is "wss" and port is None:
+				self.port = 443
+			addr = (self.uri, self.port)
 			print self.protocol
 			self.sock.connect(addr)
 		except socket.gaierror, e:
@@ -289,7 +292,10 @@ class WebsocketController(object):
 
 
 		try:
-			self.sock.sendall(create_header(key,True))
+			print "URI: "+str(self.uri)
+			
+			self.sock.sendall(create_header(key,False, self.uri, self.port))
+			
 		except socket.error, e:
 			print "Error "+str(e)
 
@@ -307,7 +313,6 @@ class WebsocketController(object):
 					if self.handshake is False:
 						headers = buf.split('\r\n')
 
-						
 						keymatch = keys_match(headers, key)
 						if keymatch is True:
 							self.handshake = True # handshake complete
@@ -375,7 +380,7 @@ class FrameHolder(object):
 		else:					
 			self.message = frame[2:] 
 		#payload message.
-		self.message = self.message.tostring().decode('unicode_escape')
+		self.message = self.message.tostring().encode('unicode_escape').decode('unicode_escape')
 		print "msg = "+self.message
 
 
