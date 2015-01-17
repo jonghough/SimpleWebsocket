@@ -81,7 +81,6 @@ class WebsocketClientApp():
 	def ws_connect(self):
 		'''Connect. Opens websocket connection.'''
 		if self.client is None and self.hostentry.get() is not None:
-			#self.start_connection()
 			self.ws_thread = threading.Thread(target=self.start_connection)
 			self.ws_thread.start()
 			self.status_thread = threading.Thread(target=self.on_status_change)
@@ -90,7 +89,10 @@ class WebsocketClientApp():
 	def start_connection(self):	
 		'''Opens connection'''
 		self.client = websocket.WebsocketController(None, None, None)
-		self.client.begin_connection("wss://echo.websocket.org")
+		port = 80
+		if(self.portentry.get() is not None:
+			port int(self.portentry.get())
+		self.client.begin_connection(self.hostentry.get(), port)
 		
 
 	def send(self, event):
