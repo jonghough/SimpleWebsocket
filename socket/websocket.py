@@ -277,8 +277,6 @@ class WebsocketController(object):
 
 		try:
 			host = socket.gethostbyname(self.uri)
-			print host
-			
 			if self.protocol is "wss" and port is None:
 				self.port = 443
 			addr = (self.uri, self.port)
@@ -292,8 +290,6 @@ class WebsocketController(object):
 
 
 		try:
-			print "URI: "+str(self.uri)
-			
 			self.sock.sendall(create_header(key,False, self.uri, self.port))
 			
 		except socket.error, e:
