@@ -90,8 +90,8 @@ class WebsocketClientApp():
 		'''Opens connection'''
 		self.client = websocket.WebsocketController(None, None, None)
 		port = 80
-		if(self.portentry.get() is not None:
-			port int(self.portentry.get())
+		if self.portentry.get() is not None:
+			port = int(self.portentry.get())
 		self.client.begin_connection(self.hostentry.get(), port)
 		
 
