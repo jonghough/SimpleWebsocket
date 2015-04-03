@@ -42,7 +42,7 @@ class WebsocketClient ( object ):
 	TLS_HANDSHAKE		= 1015
 
 
-	#Websocket op-codes (
+	#Websocket op-codes
 	#see RFC 6455 Section 11.8 (Opcodes)
 	CONTINUATION_FRAME 	= 0x0
 	TEXT_FRAME		= 0x1
@@ -50,22 +50,19 @@ class WebsocketClient ( object ):
 	CLOSE_FRAME		= 0x8
 	PING_FRAME		= 0x9
 	PONG_FRAME		= 0xA
-
-
 	#Frame bits
-	
-	fin_bits	= 0b10000000 #0x80 final bit
-	res1_bits	= 0b01000000 #0x40 reserved bit 1
-	res2_bits	= 0b00100000 #0x20 reserved bit 2
-	res3_bits	= 0b00010000 #0x10 reserved bit 3
-	opcode		= 0b00001111 #0xF  opcode
-	len_mask	= 0b10000000 #0x80 payload length s
+	fin_bits		= 0x80 #final bit
+	res1_bits		= 0x40 #reserved bit 1
+	res2_bits		= 0x20 #reserved bit 2
+	res3_bits		= 0x10 #reserved bit 3
+	opcode			= 0xF  #opcode
+	len_mask		= 0x80 #payload length 
 
 
 	#frame payload length bytes 
-	MAX_DATA_NO_EXTENSION = 126;
-	DATA_2_BYTE_EXTENSION = 1 << 16;
-	DATA_8_BYTE_EXTENSION = 1 << 63;
+	MAX_DATA_NO_EXTENSION 	= 126;
+	DATA_2_BYTE_EXTENSION 	= 1 << 16;
+	DATA_8_BYTE_EXTENSION 	= 1 << 63;
 
 
 	@staticmethod
