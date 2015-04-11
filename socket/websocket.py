@@ -7,6 +7,7 @@ import hashlib
 import struct
 from array import array
 import sys
+from backports.ssl_match_hostname import match_hostname, CertificateError
 
 '''
 Simple python implementation of the Websocket protocol (RFC6455) for
@@ -60,9 +61,9 @@ class WebsocketClient ( object ):
 
 
 	#frame payload length bytes 
-	MAX_DATA_NO_EXTENSION 	= 126;
-	DATA_2_BYTE_EXTENSION 	= 1 << 16;
-	DATA_8_BYTE_EXTENSION 	= 1 << 63;
+	MAX_DATA_NO_EXTENSION 	= 126
+	DATA_2_BYTE_EXTENSION 	= 1 << 16
+	DATA_8_BYTE_EXTENSION 	= 1 << 63
 
 
 	@staticmethod
@@ -192,6 +193,10 @@ def keys_match(headers, key):
 	else: return False
 							
 	
+def get_cert(sock, path):
+	ca_certs_path = os.path.join(os.path.dirname(path), 'certfiles.crt')
+	sslsock = ssl.wrap_socket(sock, ssl.PROTOCOL_SSLv3, ssl.CERT_REQUIRED, ca_certs_path)
+	return sslsock
 
 class WebsocketController(object):
 	'''
@@ -336,6 +341,10 @@ class WebsocketController(object):
 			return True
 		else:
 			return False
+
+	def error_in_frame(self, error):
+		if on_frame_error is not None:
+			on_frame_error(error)
 
 
 class FrameHolder(object):
