@@ -3,4 +3,4 @@ python:
   - "2.7"
 # command to install dependencies
 # command to run tests
-script: -m py_compile socket.py
+script: python -m py_compile socket.py
