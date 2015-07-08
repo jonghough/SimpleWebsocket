@@ -6,7 +6,6 @@ import base64
 import hashlib
 import struct
 from array import array
-import sys
 from backports.ssl_match_hostname import match_hostname, CertificateError
 
 '''
@@ -240,9 +239,12 @@ class WebsocketController(object):
 				self.is_closed = True
 				if self.on_close is not None:
 					self.on_close()
-			elif frameholder.opcode == 0xA: #ping frame, reply pong.
-				pongframe = WebsocketClient.make_frame('', 0x9)
-				sock.sendall(pongframe)
+			elif frameholder.opcode == 0xA: #ping frame, reply pong and vice versa: RFC 6455 5.5.2 and 5.5.3
+				frame = WebsocketClient.make_frame(frameholder.message, 0x9)
+				sock.sendall(frame)
+			elif frameholder.opcode == 0x9:
+				frame = WebsocketClient.make_frame(frameholder.message, 0xA)
+				sock.sendall(frame)
 			elif frameholder.opcode == 0x1: #message
 				self.response_buffer.append(msg)
 			elif frameholder.opcode == 0x0: #continuation fragment
